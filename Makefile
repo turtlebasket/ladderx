@@ -4,11 +4,12 @@ CMD ?= ./cmd/main.go
 BIN_DIR ?= bin
 OUT ?= $(BIN_DIR)/$(BINARY)
 PKGS ?= ./...
+LIVE_TEST_URL ?= https://www.google.com/robots.txt
 GOFUMPT ?= gofumpt
 GOLANGCI_LINT ?= golangci-lint
 GOLANGCI_CONFIG ?= .golangci-lint.yaml
 
-.PHONY: help build build-linux run test vet fmt fmt-check lint lint-fix tidy clean check-tools check-fmt-tool check-lint-tool install-tools install-linters
+.PHONY: help build build-linux run test test-integration vet fmt fmt-check lint lint-fix tidy clean check-tools check-fmt-tool check-lint-tool install-tools install-linters
 
 help:
 	@echo "Available targets:"
@@ -16,6 +17,7 @@ help:
 	@echo "  make build-linux    Cross-compile linux/amd64 binary to $(OUT)-linux-amd64"
 	@echo "  make run            Run app with go run"
 	@echo "  make test           Run unit tests"
+	@echo "  make test-integration  Run live external integration tests"
 	@echo "  make vet            Run go vet"
 	@echo "  make fmt            Format code with gofumpt"
 	@echo "  make fmt-check      Check formatting without rewriting files"
@@ -38,6 +40,9 @@ run:
 
 test:
 	$(GO) test $(PKGS)
+
+test-integration:
+	LIVE_TEST_URL="$(LIVE_TEST_URL)" $(GO) test -tags=integration -count=1 $(PKGS)
 
 vet:
 	$(GO) vet $(PKGS)

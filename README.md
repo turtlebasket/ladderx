@@ -276,6 +276,26 @@ echo "dev" > handlers/VERSION
 RULESET="./ruleset.yaml" go run cmd/main.go
 ```
 
+### Testing
+
+Run the deterministic test suite, which uses local HTTP fixtures:
+
+```bash
+make test
+```
+
+Run the live integration suite against Google:
+
+```bash
+make test-integration
+```
+
+The live suite makes outbound requests and is intentionally excluded from the default test command. Set `LIVE_TEST_URL` to exercise another absolute URL:
+
+```bash
+make test-integration LIVE_TEST_URL="https://example.com/"
+```
+
 ### Optional: Live reloading development server with [cosmtrek/air](https://github.com/cosmtrek/air)
 
 Install air according to the [installation instructions](https://github.com/cosmtrek/air#installation). 
