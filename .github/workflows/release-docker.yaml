@@ -6,6 +6,12 @@ name: Docker Build and Push
 # documentation.
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish, with or without a leading v
+        required: true
+        type: string
   #schedule:
   #  - cron: '17 14 * * *'
   push:
@@ -41,8 +47,11 @@ jobs:
 
       - name: Set version
         id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
         run: |
-          echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          version="${REQUESTED_VERSION:-${GITHUB_REF#refs/tags/v}}"
+          echo "version=${version#v}" >> "$GITHUB_OUTPUT"
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
@@ -78,9 +87,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           images: ${{ env.REGISTRY }}/${{ github.repository }}
           tags: |
-            type=semver,pattern=v{{version}}
-            type=semver,pattern=v{{major}}.{{minor}}
-            type=semver,pattern=v{{major}}
+            type=semver,pattern=v{{version}},value=v${{ steps.version.outputs.version }}
+            type=semver,pattern=v{{major}}.{{minor}},value=v${{ steps.version.outputs.version }}
+            type=semver,pattern=v{{major}},value=v${{ steps.version.outputs.version }}
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
