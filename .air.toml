@@ -4,7 +4,6 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "./tmp/main"
   cmd = "go build -o ./tmp/main ./cmd"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
@@ -13,19 +12,27 @@ tmp_dir = "tmp"
   exclude_unchanged = false
   follow_symlink = false
   full_bin = "RULESET=./ruleset.yaml ./tmp/main"
+  entrypoint = ["./tmp/main"]
   include_dir = []
-  include_ext = ["go", "tpl", "tmpl", "yaml", "html"]
+  include_ext = ["go", "tpl", "tmpl", "yaml", "html", "css"]
   include_file = []
   kill_delay = "0s"
   log = "build-errors.log"
   poll = false
   poll_interval = 0
   post_cmd = []
-  pre_cmd = ["echo 'dev' > handlers/VERSION"]
+  pre_cmd = []
   rerun = false
   rerun_delay = 500
   send_interrupt = false
   stop_on_error = false
+
+[[build.rules]]
+  name = "assets"
+  include_dir = ["handlers", "styles"]
+  include_ext = ["html", "css"]
+  cmd = "ladder-assets"
+  delay = 200
 
 [color]
   app = ""
@@ -44,3 +51,8 @@ tmp_dir = "tmp"
 [screen]
   clear_on_rebuild = true
   keep_scroll = true
+
+[proxy]
+  enabled = true
+  proxy_port = 8090
+  app_port = 8080

@@ -1,20 +1,19 @@
-# Building the binary of the App
 ARG VERSION=build
 
-FROM golang:1.26 AS build
-WORKDIR /go/src/ladder
+FROM nixos/nix:2.34.8 AS build
+ARG VERSION
+WORKDIR /src
 
 COPY . .
 
-RUN go mod download
-
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-X ladder/handlers.version=${VERSION}" -o ladder cmd/main.go
+RUN nix --extra-experimental-features "nix-command flakes" develop path:. -c sh -c \
+    'ladder-assets && CGO_ENABLED=0 GOOS=linux go build -ldflags="-X ladder/handlers.version=${VERSION}" -o /tmp/ladder ./cmd'
 
 FROM gcr.io/distroless/static-debian13:nonroot AS release
 
 WORKDIR /app
 
-COPY --from=build /go/src/ladder/ladder .
+COPY --from=build /tmp/ladder .
 
 #EXPOSE 8080
 

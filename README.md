@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">Ladder</h1>
-<div><img alt="License" src="https://img.shields.io/github/license/everywall/ladder"> <img alt="go.mod Go version " src="https://img.shields.io/github/go-mod/go-version/everywall/ladder"> <img alt="GitHub tag (with filter)" src="https://img.shields.io/github/v/tag/everywall/ladder"> <img alt="GitHub (Pre-)Release Date" src="https://img.shields.io/github/release-date-pre/everywall/ladder"> <img alt="GitHub Downloads all releases" src="https://img.shields.io/github/downloads/everywall/ladder/total"> <img alt="GitHub Build Status (with event)" src="https://img.shields.io/github/actions/workflow/status/everywall/ladder/release-binaries.yaml"></div>
+<div><img alt="License" src="https://img.shields.io/github/license/everywall/ladder"> <img alt="go.mod Go version " src="https://img.shields.io/github/go-mod/go-version/everywall/ladder"> <img alt="GitHub tag (with filter)" src="https://img.shields.io/github/v/tag/everywall/ladder"> <img alt="GitHub (Pre-)Release Date" src="https://img.shields.io/github/release-date-pre/everywall/ladder"> <img alt="GitHub Downloads all releases" src="https://img.shields.io/github/downloads/everywall/ladder/total"> <img alt="GitHub Build Status (with event)" src="https://img.shields.io/github/actions/workflow/status/everywall/ladder/ci.yaml"></div>
 
 
 *Ladder is a http web proxy.* 
@@ -269,41 +269,84 @@ FlareSolverr integration is particularly useful for:
 
 ## Development
 
-To run a development server at http://localhost:8080:
+Ladder is a Nix-first project. The pinned flake provides the compiler, asset
+toolchain, development server, formatter, linter, release tooling, and all
+project commands.
+
+Enter the development shell and start the live-reloading server:
 
 ```bash
-echo "dev" > handlers/VERSION
-RULESET="./ruleset.yaml" go run cmd/main.go
+nix develop
+ladder-dev
 ```
 
-### Testing
+Open http://localhost:8090. Air rebuilds the embedded frontend assets, restarts
+the Go server, and reloads the browser when watched files change.
+
+The same server can be launched without entering an interactive shell:
+
+```bash
+nix run .#dev
+```
+
+### Build and run
+
+Build the reproducible package:
+
+```bash
+nix build
+./result/bin/ladder -r ./ruleset.yaml
+```
+
+Or build and run it directly:
+
+```bash
+nix run . -- -r ./ruleset.yaml
+```
+
+Build a Linux AMD64 binary from any supported development system:
+
+```bash
+nix build .#linux-amd64
+```
+
+The stylesheet at `cmd/styles.css` is generated and intentionally not committed.
+Both `nix build` and the development commands generate it automatically. To
+regenerate it manually:
+
+```bash
+nix run .#assets
+```
+
+### Checks and maintenance
 
 Run the deterministic test suite, which uses local HTTP fixtures:
 
 ```bash
-make test
+nix run .#test
 ```
 
-Run the live integration suite against Google:
+Run every deterministic build, test, vet, formatting, and lint gate used by CI:
 
 ```bash
-make test-integration
+nix flake check
 ```
 
-The live suite makes outbound requests and is intentionally excluded from the default test command. Set `LIVE_TEST_URL` to exercise another absolute URL:
+Other commands are exposed as flake apps:
 
 ```bash
-make test-integration LIVE_TEST_URL="https://example.com/"
+nix run .#vet
+nix run .#fmt-check
+nix run .#fmt
+nix run .#lint
+nix run .#lint-fix
+nix run .#tidy
 ```
 
-### Optional: Live reloading development server with [cosmtrek/air](https://github.com/cosmtrek/air)
-
-Install air according to the [installation instructions](https://github.com/cosmtrek/air#installation). 
-
-Run a development server at http://localhost:8080:
+The live integration suite makes outbound requests and is intentionally excluded
+from `nix flake check`:
 
 ```bash
-air # or the path to air if you haven't added a path alias to your .bashrc or .zshrc
+nix run .#integration
+LIVE_TEST_URL="https://example.com/" nix run .#integration
 ```
-
-This project uses [pnpm](https://pnpm.io/) to build a stylesheet with the [Tailwind CSS](https://tailwindcss.com/) classes. For local development, if you modify styles in `form.html`, run `pnpm build` to generate a new stylesheet.

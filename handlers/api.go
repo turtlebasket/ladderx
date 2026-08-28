@@ -36,8 +36,7 @@ func Api(c *fiber.Ctx) error {
 	body, req, resp, err := fetchSite(url, queries)
 	if err != nil {
 		log.Println("ERROR:", err)
-		c.SendStatus(500)
-		return c.SendString(err.Error())
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
 	response := Response{

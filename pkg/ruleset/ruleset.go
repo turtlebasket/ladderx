@@ -111,7 +111,7 @@ func NewRuleset(rulePaths string) (RuleSet, error) {
 		// panic if the user specified a local ruleset, but it wasn't found on disk
 		// don't fail silently
 		for _, err := range errs {
-			if errors.Is(os.ErrNotExist, err) {
+			if errors.Is(err, os.ErrNotExist) {
 				e := fmt.Errorf("PANIC: ruleset '%s' not found", err)
 				panic(errors.Join(e, err))
 			}
@@ -161,7 +161,6 @@ func (rs *RuleSet) loadRulesFromLocalDir(path string) error {
 
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}
@@ -180,7 +179,6 @@ func (rs *RuleSet) loadRulesFromLocalFile(path string) error {
 
 	var r RuleSet
 	err = yaml.Unmarshal(yamlFile, &r)
-
 	if err != nil {
 		e := fmt.Errorf("failed to load rules from local file, possible syntax error in '%s'", path)
 		ee := errors.Join(e, err)
@@ -222,7 +220,6 @@ func (rs *RuleSet) loadRulesFromRemoteFile(rulesURL string) error {
 
 	if isGzip {
 		reader, err = gzip.NewReader(resp.Body)
-
 		if err != nil {
 			return fmt.Errorf("failed to create gzip reader for URL '%s' with status code '%s': %w", rulesURL, resp.Status, err)
 		}
@@ -231,7 +228,6 @@ func (rs *RuleSet) loadRulesFromRemoteFile(rulesURL string) error {
 	}
 
 	err = yaml.NewDecoder(reader).Decode(&r)
-
 	if err != nil {
 		e := fmt.Errorf("failed to load rules from remote url '%s' with status code '%s' and possible syntax error", rulesURL, resp.Status)
 		ee := errors.Join(e, err)

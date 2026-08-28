@@ -1,8 +1,8 @@
-# dev binary
-ladder
-
-node_modules
-VERSION
-output.css
-
-node_modules
+# Local build and development artifacts
+/cmd/styles.css
+/dist
+/handlers/VERSION
+/ladder
+/result
+/styles/output.css
+/tmp

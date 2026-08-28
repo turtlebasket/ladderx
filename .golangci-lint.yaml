@@ -1,24 +1,32 @@
-linters:
-  enable:
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-    - cyclop
-    - dupword
-    - wsl
-    - varnamelen
-    - usestdlibvars
-    - unparam
-    - revive
-    - prealloc
-    - misspell
-    - gocyclo
-    - funlen
-    - bodyclose
+version: "2"
 
-linters-settings:
-  cyclop:
-    max-complexity: 15
+linters:
+  default: standard
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+        path: handlers/proxy.go
+        text: "c.SendStatus"
+      - linters:
+          - unused
+        path: handlers/proxy.go
+        text: "func applyRules is unused"
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

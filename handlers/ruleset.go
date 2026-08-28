@@ -9,14 +9,12 @@ import (
 
 func Ruleset(c *fiber.Ctx) error {
 	if os.Getenv("EXPOSE_RULESET") == "false" {
-		c.SendStatus(fiber.StatusForbidden)
-		return c.SendString("Rules Disabled")
+		return c.Status(fiber.StatusForbidden).SendString("Rules Disabled")
 	}
 
 	body, err := yaml.Marshal(rulesSet)
 	if err != nil {
-		c.SendStatus(fiber.StatusInternalServerError)
-		return c.SendString(err.Error())
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
 	return c.SendString(string(body))
