@@ -225,6 +225,7 @@
           export GOPROXY=off
           export GOSUMDB=off
           export GOTOOLCHAIN=local
+          export CGO_ENABLED=0
         '';
 
         mkGoCheck =
