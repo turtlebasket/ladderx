@@ -1,13 +1,15 @@
 package ruleset
 
 import (
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -26,148 +28,107 @@ var (
 )
 
 func TestLoadRulesFromRemoteFile(t *testing.T) {
-	app := fiber.New()
-	defer app.Shutdown()
+	sourceRules, err := loadRuleFromString(t, validYAML)
+	require.NoError(t, err)
 
-	app.Get("/valid-config.yml", func(c *fiber.Ctx) error {
-		c.SendString(validYAML)
-		return nil
-	})
+	gzipReader, err := sourceRules.GzipYaml()
+	require.NoError(t, err)
+	gzipBody, err := io.ReadAll(gzipReader)
+	require.NoError(t, err)
 
-	app.Get("/invalid-config.yml", func(c *fiber.Ctx) error {
-		c.SendString(invalidYAML)
-		return nil
-	})
-
-	app.Get("/valid-config.gz", func(c *fiber.Ctx) error {
-		c.Set("Content-Type", "application/octet-stream")
-
-		rs, err := loadRuleFromString(validYAML)
-		if err != nil {
-			t.Errorf("failed to load valid yaml from string: %s", err.Error())
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var writeErr error
+		switch r.URL.Path {
+		case "/valid-config.yml":
+			_, writeErr = io.WriteString(w, validYAML)
+		case "/invalid-config.yml":
+			_, writeErr = io.WriteString(w, invalidYAML)
+		case "/valid-config.gz":
+			w.Header().Set("Content-Type", "application/octet-stream")
+			_, writeErr = w.Write(gzipBody)
+		default:
+			http.NotFound(w, r)
 		}
-
-		s, err := rs.GzipYaml()
-		if err != nil {
-			t.Errorf("failed to load gzip serialize yaml: %s", err.Error())
+		if writeErr != nil {
+			t.Errorf("write fixture response: %v", writeErr)
 		}
+	}))
+	t.Cleanup(server.Close)
 
-		err = c.SendStream(s)
-		if err != nil {
-			t.Errorf("failed to stream gzip serialized yaml: %s", err.Error())
-		}
-		return nil
-	})
-
-	// Start the server in a goroutine
-	go func() {
-		if err := app.Listen("127.0.0.1:9999"); err != nil {
-			t.Errorf("Server failed to start: %s", err.Error())
-		}
-	}()
-
-	// Wait for the server to start
-	time.Sleep(time.Second * 1)
-
-	rs, err := NewRuleset("http://127.0.0.1:9999/valid-config.yml")
-	if err != nil {
-		t.Errorf("failed to load plaintext ruleset from http server: %s", err.Error())
+	for _, path := range []string{"/valid-config.yml", "/valid-config.gz"} {
+		t.Run(path, func(t *testing.T) {
+			rs, err := NewRuleset(server.URL + path)
+			require.NoError(t, err)
+			require.Len(t, rs, 1)
+			assert.Equal(t, "example.com", rs[0].Domain)
+		})
 	}
 
-	assert.Equal(t, rs[0].Domain, "example.com")
+	_, err = NewRuleset(server.URL + "/invalid-config.yml")
+	require.Error(t, err)
 
-	rs, err = NewRuleset("http://127.0.0.1:9999/valid-config.gz")
-	if err != nil {
-		t.Errorf("failed to load gzipped ruleset from http server: %s", err.Error())
-	}
-
-	assert.Equal(t, rs[0].Domain, "example.com")
-
-	os.Setenv("RULESET", "http://127.0.0.1:9999/valid-config.gz")
-
-	rs = NewRulesetFromEnv()
-	if !assert.Equal(t, rs[0].Domain, "example.com") {
-		t.Error("expected no errors loading ruleset from gzip url using environment variable, but got one")
-	}
+	t.Setenv("RULESET", server.URL+"/valid-config.gz")
+	rs := NewRulesetFromEnv()
+	require.Len(t, rs, 1)
+	assert.Equal(t, "example.com", rs[0].Domain)
 }
 
-func loadRuleFromString(yaml string) (RuleSet, error) {
-	// Create a temporary file and load it
-	tmpFile, _ := os.CreateTemp("", "ruleset*.yaml")
+func loadRuleFromString(t *testing.T, yaml string) (RuleSet, error) {
+	t.Helper()
 
-	defer os.Remove(tmpFile.Name())
-
-	tmpFile.WriteString(yaml)
+	rulesPath := filepath.Join(t.TempDir(), "ruleset.yaml")
+	require.NoError(t, os.WriteFile(rulesPath, []byte(yaml), 0o600))
 
 	rs := RuleSet{}
-	err := rs.loadRulesFromLocalFile(tmpFile.Name())
+	err := rs.loadRulesFromLocalFile(rulesPath)
 
 	return rs, err
 }
 
 // TestLoadRulesFromLocalFile tests the loading of rules from a local YAML file.
 func TestLoadRulesFromLocalFile(t *testing.T) {
-	rs, err := loadRuleFromString(validYAML)
-	if err != nil {
-		t.Errorf("Failed to load rules from valid YAML: %s", err)
-	}
+	rs, err := loadRuleFromString(t, validYAML)
+	require.NoError(t, err)
+	require.Len(t, rs, 1)
 
-	assert.Equal(t, rs[0].Domain, "example.com")
-	assert.Equal(t, rs[0].RegexRules[0].Match, "^http:")
-	assert.Equal(t, rs[0].RegexRules[0].Replace, "https:")
+	assert.Equal(t, "example.com", rs[0].Domain)
+	require.Len(t, rs[0].RegexRules, 1)
+	assert.Equal(t, "^http:", rs[0].RegexRules[0].Match)
+	assert.Equal(t, "https:", rs[0].RegexRules[0].Replace)
 
-	_, err = loadRuleFromString(invalidYAML)
-	if err == nil {
-		t.Errorf("Expected an error when loading invalid YAML, but got none")
-	}
+	_, err = loadRuleFromString(t, invalidYAML)
+	require.Error(t, err)
 }
 
 // TestLoadRulesFromLocalDir tests the loading of rules from a local nested directory full of yaml rulesets
 func TestLoadRulesFromLocalDir(t *testing.T) {
-	// Create a temporary directory
-	baseDir, err := os.MkdirTemp("", "ruleset_test")
-	if err != nil {
-		t.Fatalf("Failed to create temporary directory: %s", err)
-	}
-
-	defer os.RemoveAll(baseDir)
-
-	// Create a nested subdirectory
+	baseDir := t.TempDir()
 	nestedDir := filepath.Join(baseDir, "nested")
-	err = os.Mkdir(nestedDir, 0o755)
-
-	if err != nil {
-		t.Fatalf("Failed to create nested directory: %s", err)
-	}
-
-	// Create a nested subdirectory
 	nestedTwiceDir := filepath.Join(nestedDir, "nestedTwice")
-	err = os.Mkdir(nestedTwiceDir, 0o755)
-	if err != nil {
-		t.Fatalf("Failed to create twice-nested directory: %s", err)
-	}
+	require.NoError(t, os.MkdirAll(nestedTwiceDir, 0o755))
 
 	testCases := []string{"test.yaml", "test2.yaml", "test-3.yaml", "test 4.yaml", "1987.test.yaml.yml", "foobar.example.com.yaml", "foobar.com.yml"}
 	for _, fileName := range testCases {
-		filePath := filepath.Join(nestedDir, "2x-"+fileName)
-		os.WriteFile(filePath, []byte(validYAML), 0o644)
-
-		filePath = filepath.Join(nestedDir, fileName)
-		os.WriteFile(filePath, []byte(validYAML), 0o644)
-
-		filePath = filepath.Join(baseDir, "base-"+fileName)
-		os.WriteFile(filePath, []byte(validYAML), 0o644)
+		paths := []string{
+			filepath.Join(nestedDir, "2x-"+fileName),
+			filepath.Join(nestedTwiceDir, fileName),
+			filepath.Join(baseDir, "base-"+fileName),
+		}
+		for _, path := range paths {
+			require.NoError(t, os.WriteFile(path, []byte(validYAML), 0o600))
+		}
 	}
 
 	rs := RuleSet{}
-	err = rs.loadRulesFromLocalDir(baseDir)
+	err := rs.loadRulesFromLocalDir(baseDir)
 
-	assert.NoError(t, err)
-	assert.Equal(t, rs.Count(), len(testCases)*3)
+	require.NoError(t, err)
+	assert.Equal(t, len(testCases)*3, rs.Count())
 
 	for _, rule := range rs {
-		assert.Equal(t, rule.Domain, "example.com")
-		assert.Equal(t, rule.RegexRules[0].Match, "^http:")
-		assert.Equal(t, rule.RegexRules[0].Replace, "https:")
+		assert.Equal(t, "example.com", rule.Domain)
+		require.Len(t, rule.RegexRules, 1)
+		assert.Equal(t, "^http:", rule.RegexRules[0].Match)
+		assert.Equal(t, "https:", rule.RegexRules[0].Replace)
 	}
 }

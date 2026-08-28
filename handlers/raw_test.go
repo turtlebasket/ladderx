@@ -1,4 +1,3 @@
-// BEGIN: 7f8d9e6d4b5c
 package handlers
 
 import (
@@ -12,6 +11,15 @@ import (
 )
 
 func TestRaw(t *testing.T) {
+	resetHandlerTestGlobals(t)
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if _, err := w.Write([]byte("<!doctype html><title>fixture</title>")); err != nil {
+			t.Errorf("write fixture response: %v", err)
+		}
+	}))
+	t.Cleanup(upstream.Close)
+
 	app := fiber.New()
 	app.Get("/raw/*", Raw)
 
@@ -21,14 +29,14 @@ func TestRaw(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "valid url",
-			url:      "https://www.google.com",
-			expected: "<!doctype html>",
+			name:     "upstream response",
+			url:      upstream.URL,
+			expected: "<!doctype html><title>fixture</title>",
 		},
 		{
 			name:     "invalid url",
 			url:      "invalid-url",
-			expected: "parse invalid-url: invalid URI for request",
+			expected: "unsupported protocol scheme",
 		},
 	}
 
@@ -41,8 +49,12 @@ func TestRaw(t *testing.T) {
 			}
 			defer resp.Body.Close()
 
-			if resp.StatusCode != http.StatusOK {
-				t.Errorf("expected status OK; got %v", resp.Status)
+			expectedStatus := http.StatusOK
+			if tc.url == "invalid-url" {
+				expectedStatus = http.StatusInternalServerError
+			}
+			if resp.StatusCode != expectedStatus {
+				t.Errorf("expected status %d; got %v", expectedStatus, resp.Status)
 			}
 
 			body, err := io.ReadAll(resp.Body)
@@ -56,5 +68,3 @@ func TestRaw(t *testing.T) {
 		})
 	}
 }
-
-// END: 7f8d9e6d4b5c

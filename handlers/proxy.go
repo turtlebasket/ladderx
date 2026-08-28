@@ -355,12 +355,12 @@ func rewriteHtml(bodyB []byte, u *url.URL, rule ruleset.Rule) string {
 	// images
 	imagePattern := `<img\s+([^>]*\s+)?src="(/)([^"]*)"`
 	re := regexp.MustCompile(imagePattern)
-	body = re.ReplaceAllString(body, fmt.Sprintf(`<img $1 src="%s$3"`, proxyPrefix))
+	body = re.ReplaceAllString(body, fmt.Sprintf(`<img ${1}src="%s${3}"`, proxyPrefix))
 
 	// scripts
 	scriptPattern := `<script\s+([^>]*\s+)?src="(/)([^"]*)"`
 	reScript := regexp.MustCompile(scriptPattern)
-	body = reScript.ReplaceAllString(body, fmt.Sprintf(`<script $1 script="%s$3"`, proxyPrefix))
+	body = reScript.ReplaceAllString(body, fmt.Sprintf(`<script ${1}src="%s${3}"`, proxyPrefix))
 
 	// body = strings.ReplaceAll(body, "srcset=\"/", "srcset=\""+proxyPrefix) // TODO: Needs a regex to rewrite the URL's
 	body = strings.ReplaceAll(body, "href=\"/", "href=\""+proxyPrefix)

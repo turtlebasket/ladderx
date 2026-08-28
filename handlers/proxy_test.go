@@ -1,7 +1,7 @@
-// BEGIN: 6f8b3f5d5d5d
 package handlers
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,19 +11,40 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProxySite(t *testing.T) {
-	app := fiber.New()
-	app.Get("/:url", ProxySite(""))
+	resetHandlerTestGlobals(t)
 
-	req := httptest.NewRequest("GET", "/https://example.com", nil)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/article", r.URL.Path)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if _, err := w.Write([]byte("proxied response")); err != nil {
+			t.Errorf("write fixture response: %v", err)
+		}
+	}))
+	t.Cleanup(upstream.Close)
+
+	app := fiber.New()
+	app.Get("/*", ProxySite(""))
+
+	req := httptest.NewRequest(http.MethodGet, "/"+upstream.URL+"/article", nil)
 	resp, err := app.Test(req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "text/html; charset=utf-8", resp.Header.Get("Content-Type"))
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Equal(t, "proxied response", string(body))
 }
 
 func TestRewriteHtml(t *testing.T) {
+	resetHandlerTestGlobals(t)
+
 	bodyB := []byte(`
 		<html>
 			<head>
@@ -46,7 +67,7 @@ func TestRewriteHtml(t *testing.T) {
 			</head>
 			<body>
 				<img src="/https://example.com/image.jpg">
-				<script script="/https://example.com/script.js"></script>
+				<script src="/https://example.com/script.js"></script>
 				<a href="/https://example.com/about">About Us</a>
 				<div style="background-image: url('/https://example.com/background.jpg')"></div>
 			</body>
@@ -57,4 +78,26 @@ func TestRewriteHtml(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-// END: 6f8b3f5d5d5d
+func resetHandlerTestGlobals(t *testing.T) {
+	t.Helper()
+
+	originalAllowedDomains := allowedDomains
+	originalRulesSet := rulesSet
+	originalFlareSolverrHost := flareSolverrHost
+	originalDefaultTimeout := defaultTimeout
+	originalBasePath := basePath
+
+	allowedDomains = []string{""}
+	rulesSet = nil
+	flareSolverrHost = ""
+	defaultTimeout = 5
+	basePath = ""
+
+	t.Cleanup(func() {
+		allowedDomains = originalAllowedDomains
+		rulesSet = originalRulesSet
+		flareSolverrHost = originalFlareSolverrHost
+		defaultTimeout = originalDefaultTimeout
+		basePath = originalBasePath
+	})
+}
