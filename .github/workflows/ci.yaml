@@ -23,3 +23,18 @@ jobs:
 
       - name: Check flake
         run: nix flake check --print-build-logs
+
+      - name: Build container
+        run: docker build --build-arg VERSION="$GITHUB_SHA" --tag ladder:ci .
+
+      - name: Smoke test container
+        run: |
+          docker run --detach --name ladder-ci \
+            --publish 127.0.0.1:8080:8080 \
+            --env RULESET=/ruleset.yaml \
+            --volume "$GITHUB_WORKSPACE/ruleset.yaml:/ruleset.yaml:ro" \
+            ladder:ci
+          trap 'docker logs ladder-ci; docker rm --force ladder-ci' EXIT
+          curl --fail --silent --show-error \
+            --retry 20 --retry-all-errors --retry-delay 1 \
+            http://127.0.0.1:8080/ | grep --fixed-strings --quiet '<title>ladder</title>'
