@@ -58,7 +58,7 @@ func TestRewriteHtml(t *testing.T) {
 			</body>
 		</html>
 	`)
-	u := &url.URL{Host: "example.com"}
+	u := &url.URL{Scheme: "https", Host: "example.com"}
 
 	expected := `
 		<html>

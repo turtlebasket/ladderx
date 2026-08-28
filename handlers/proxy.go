@@ -18,6 +18,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/net/html"
 )
 
 // FlareSolverrRequest represents the request structure for FlareSolverr API
@@ -342,32 +343,84 @@ func fetchSite(urlpath string, queries map[string]string) (string, *http.Request
 	}
 
 	// log.Print("rule", rule) TODO: Add a debug mode to print the rule
-	body := rewriteHtml(bodyB, u, rule)
+	body := rewriteHtml(bodyB, resp.Request.URL, rule)
 	return body, req, resp, nil
 }
 
-func rewriteHtml(bodyB []byte, u *url.URL, rule ruleset.Rule) string {
-	// Rewrite the HTML
-	body := string(bodyB)
+func rewriteHtml(bodyB []byte, pageURL *url.URL, _ ruleset.Rule) string {
+	tokenizer := html.NewTokenizer(bytes.NewReader(bodyB))
+	var rewritten strings.Builder
+	rewritten.Grow(len(bodyB))
 
-	proxyPrefix := basePath + "/https://" + u.Host + "/"
+	for {
+		tokenType := tokenizer.Next()
+		switch tokenType {
+		case html.ErrorToken:
+			if tokenizer.Err() == io.EOF {
+				body := rewritten.String()
+				if proxyRoot, ok := resolveProxyReference(pageURL, "/"); ok {
+					body = strings.ReplaceAll(body, "url('/", "url('"+proxyRoot)
+					body = strings.ReplaceAll(body, "url(/", "url("+proxyRoot)
+				}
+				return body
+			}
+			return string(bodyB)
+		case html.StartTagToken, html.SelfClosingTagToken:
+			token := tokenizer.Token()
+			if rewriteTokenURLAttributes(&token, pageURL) {
+				rewritten.WriteString(token.String())
+			} else {
+				rewritten.Write(tokenizer.Raw())
+			}
+		default:
+			rewritten.Write(tokenizer.Raw())
+		}
+	}
+}
 
-	// images
-	imagePattern := `<img\s+([^>]*\s+)?src="(/)([^"]*)"`
-	re := regexp.MustCompile(imagePattern)
-	body = re.ReplaceAllString(body, fmt.Sprintf(`<img ${1}src="%s${3}"`, proxyPrefix))
+func rewriteTokenURLAttributes(token *html.Token, pageURL *url.URL) bool {
+	if token.Data == "base" {
+		return false
+	}
 
-	// scripts
-	scriptPattern := `<script\s+([^>]*\s+)?src="(/)([^"]*)"`
-	reScript := regexp.MustCompile(scriptPattern)
-	body = reScript.ReplaceAllString(body, fmt.Sprintf(`<script ${1}src="%s${3}"`, proxyPrefix))
+	changed := false
+	for i := range token.Attr {
+		key := strings.ToLower(token.Attr[i].Key)
+		if key != "href" && key != "src" {
+			continue
+		}
 
-	// body = strings.ReplaceAll(body, "srcset=\"/", "srcset=\""+proxyPrefix) // TODO: Needs a regex to rewrite the URL's
-	body = strings.ReplaceAll(body, "href=\"/", "href=\""+proxyPrefix)
-	body = strings.ReplaceAll(body, "url('/", "url('"+proxyPrefix)
-	body = strings.ReplaceAll(body, "url(/", "url("+proxyPrefix)
-	body = strings.ReplaceAll(body, "href=\"https://"+u.Host, "href=\""+proxyPrefix)
-	return body
+		proxied, ok := resolveProxyReference(pageURL, token.Attr[i].Val)
+		if !ok {
+			continue
+		}
+
+		token.Attr[i].Val = proxied
+		changed = true
+	}
+	return changed
+}
+
+func resolveProxyReference(pageURL *url.URL, rawReference string) (string, bool) {
+	if pageURL == nil || rawReference == "" || strings.HasPrefix(rawReference, "#") {
+		return rawReference, false
+	}
+
+	reference, err := url.Parse(rawReference)
+	if err != nil {
+		return rawReference, false
+	}
+
+	if reference.Host != "" && !strings.EqualFold(reference.Host, pageURL.Host) {
+		return rawReference, false
+	}
+
+	resolved := pageURL.ResolveReference(reference)
+	if resolved.Host == "" || (!strings.EqualFold(resolved.Scheme, "http") && !strings.EqualFold(resolved.Scheme, "https")) {
+		return rawReference, false
+	}
+
+	return basePath + "/" + resolved.String(), true
 }
 
 func getenv(key, fallback string) string {
