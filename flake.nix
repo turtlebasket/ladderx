@@ -49,7 +49,7 @@
           pname = "ladder";
           inherit version src;
 
-          vendorHash = "sha256-mEyW6ZRyxvfu/c//mKYdet0oQchjydi996QXtdO7V0A=";
+          vendorHash = "sha256-GGmEOEk2BcjaaskzDEeKqGe91Wgd+x7No89A+HgMovo=";
           nativeBuildInputs = with pkgs; [
             minify
             tailwindcss
@@ -71,8 +71,8 @@
 
           meta = {
             description = "HTTP web proxy for testing content delivery behavior";
-            homepage = "https://github.com/everywall/ladder";
-            license = lib.licenses.mit;
+            homepage = "https://github.com/turtlebasket/ladderx";
+            license = lib.licenses.gpl3Only;
             mainProgram = "ladder";
           };
         };

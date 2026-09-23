@@ -1,7 +1,6 @@
-version: '3'
 services:
   ladder:
-    image: ghcr.io/everywall/ladder:latest
+    image: ghcr.io/turtlebasket/ladderx:latest
     container_name: ladder
     build: .
     #restart: always

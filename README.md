@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">Ladder</h1>
-<div><img alt="License" src="https://img.shields.io/github/license/everywall/ladder"> <img alt="go.mod Go version " src="https://img.shields.io/github/go-mod/go-version/everywall/ladder"> <img alt="GitHub tag (with filter)" src="https://img.shields.io/github/v/tag/everywall/ladder"> <img alt="GitHub (Pre-)Release Date" src="https://img.shields.io/github/release-date-pre/everywall/ladder"> <img alt="GitHub Downloads all releases" src="https://img.shields.io/github/downloads/everywall/ladder/total"> <img alt="GitHub Build Status (with event)" src="https://img.shields.io/github/actions/workflow/status/everywall/ladder/ci.yaml"></div>
+<div><img alt="License" src="https://img.shields.io/github/license/turtlebasket/ladderx"> <img alt="go.mod Go version " src="https://img.shields.io/github/go-mod/go-version/turtlebasket/ladderx"> <img alt="GitHub tag (with filter)" src="https://img.shields.io/github/v/tag/turtlebasket/ladderx"> <img alt="GitHub (Pre-)Release Date" src="https://img.shields.io/github/release-date-pre/turtlebasket/ladderx"> <img alt="GitHub Downloads all releases" src="https://img.shields.io/github/downloads/turtlebasket/ladderx/total"> <img alt="GitHub Build Status (with event)" src="https://img.shields.io/github/actions/workflow/status/turtlebasket/ladderx/ci.yaml"></div>
 
 
 *Ladder is a http web proxy.* 
@@ -40,7 +40,7 @@ sequenceDiagram
 - [x] Fetch RAW HTML
 - [x] Custom User Agent
 - [x] Custom X-Forwarded-For IP
-- [x] [Docker container](https://github.com/everywall/ladder/pkgs/container/ladder) (amd64, arm64)
+- [x] [Docker container](https://github.com/turtlebasket/ladderx/pkgs/container/ladderx) (amd64, arm64)
 - [x] Linux binary
 - [x] Mac OS binary
 - [x] Windows binary (untested)
@@ -65,18 +65,18 @@ Third-party tools such as FlareSolverr exist and may be used independently to re
 > **Warning:** If your instance will be publicly accessible, make sure to enable Basic Auth. This will prevent unauthorized users from using your proxy. If you do not enable Basic Auth, anyone can use your proxy to browse nasty/illegal stuff. And you will be made responsible for it.
 
 ### Binary
-1) Download binary [here](https://github.com/everywall/ladder/releases/latest)
+1) Download binary [here](https://github.com/turtlebasket/ladderx/releases/latest)
 2) Unpack and run the binary `./ladder -r https://raw.githubusercontent.com/everywall/ladder-rules/main/ruleset.yaml`
 3) Open Browser (Default: http://localhost:8080)
 
 ### Docker
 ```bash
-docker run -p 8080:8080 -d --env RULESET=https://raw.githubusercontent.com/everywall/ladder-rules/main/ruleset.yaml --name ladder ghcr.io/everywall/ladder:latest
+docker run -p 8080:8080 -d --env RULESET=https://raw.githubusercontent.com/everywall/ladder-rules/main/ruleset.yaml --name ladder ghcr.io/turtlebasket/ladderx:latest
 ```
 
 ### Docker Compose
 ```bash
-curl https://raw.githubusercontent.com/everywall/ladder/main/docker-compose.yaml --output docker-compose.yaml
+curl https://raw.githubusercontent.com/turtlebasket/ladderx/main/docker-compose.yaml --output docker-compose.yaml
 docker-compose up -d
 ```
 
@@ -204,7 +204,7 @@ Ladder now supports integration with [FlareSolverr](https://github.com/FlareSolv
    # docker-compose.yaml
    services:
      ladder:
-       image: ghcr.io/everywall/ladder:latest
+       image: ghcr.io/turtlebasket/ladderx:latest
        ports:
          - "8080:8080"
        environment:

@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">Ladder</h1>
-<div><img alt="License" src="https://img.shields.io/github/license/everywall/ladder"> <img alt="go.mod Go version " src="https://img.shields.io/github/go-mod/go-version/everywall/ladder"> <img alt="GitHub tag (with filter)" src="https://img.shields.io/github/v/tag/everywall/ladder"> <img alt="GitHub (Pre-)Release Date" src="https://img.shields.io/github/release-date-pre/everywall/ladder"> <img alt="GitHub Downloads all releases" src="https://img.shields.io/github/downloads/everywall/ladder/total"> <img alt="GitHub Build Status (with event)" src="https://img.shields.io/github/actions/workflow/status/everywall/ladder/release-binaries.yaml"></div>
+<div><img alt="License" src="https://img.shields.io/github/license/turtlebasket/ladderx"> <img alt="go.mod Go version " src="https://img.shields.io/github/go-mod/go-version/turtlebasket/ladderx"> <img alt="GitHub tag (with filter)" src="https://img.shields.io/github/v/tag/turtlebasket/ladderx"> <img alt="GitHub (Pre-)Release Date" src="https://img.shields.io/github/release-date-pre/turtlebasket/ladderx"> <img alt="GitHub Downloads all releases" src="https://img.shields.io/github/downloads/turtlebasket/ladderx/total"> <img alt="GitHub Build Status (with event)" src="https://img.shields.io/github/actions/workflow/status/turtlebasket/ladderx/ci.yaml"></div>
 
 [English](./README.md) | 简体中文
 
@@ -39,7 +39,7 @@ sequenceDiagram
 - [x] 获取原始 HTML
 - [x] 自定义 User-Agent
 - [x] 自定义 X-Forwarded-For IP
-- [x] [Docker 镜像](https://github.com/everywall/ladder/pkgs/container/ladder)（amd64、arm64）
+- [x] [Docker 镜像](https://github.com/turtlebasket/ladderx/pkgs/container/ladderx)（amd64、arm64）
 - [x] Linux 二进制
 - [x] macOS 二进制
 - [x] Windows 二进制（未经测试）
@@ -64,18 +64,18 @@ sequenceDiagram
 > **警告：** 如果你的实例对外公开访问，请务必启用基本认证，否则任何人都可以借助你的代理浏览不当或违法内容，由此产生的责任将由你承担。
 
 ### 二进制
-1) 在[此处](https://github.com/everywall/ladder/releases/latest)下载二进制文件
+1) 在[此处](https://github.com/turtlebasket/ladderx/releases/latest)下载二进制文件
 2) 解压后运行 `./ladder -r https://raw.githubusercontent.com/everywall/ladder-rules/main/ruleset.yaml`
 3) 打开浏览器（默认地址：http://localhost:8080）
 
 ### Docker
 ```bash
-docker run -p 8080:8080 -d --env RULESET=https://raw.githubusercontent.com/everywall/ladder-rules/main/ruleset.yaml --name ladder ghcr.io/everywall/ladder:latest
+docker run -p 8080:8080 -d --env RULESET=https://raw.githubusercontent.com/everywall/ladder-rules/main/ruleset.yaml --name ladder ghcr.io/turtlebasket/ladderx:latest
 ```
 
 ### Docker Compose
 ```bash
-curl https://raw.githubusercontent.com/everywall/ladder/main/docker-compose.yaml --output docker-compose.yaml
+curl https://raw.githubusercontent.com/turtlebasket/ladderx/main/docker-compose.yaml --output docker-compose.yaml
 docker-compose up -d
 ```
 
@@ -202,7 +202,7 @@ Ladder 现已支持与 [FlareSolverr](https://github.com/FlareSolverr/FlareSolve
    # docker-compose.yaml
    services:
      ladder:
-       image: ghcr.io/everywall/ladder:latest
+       image: ghcr.io/turtlebasket/ladderx:latest
        ports:
          - "8080:8080"
        environment:
