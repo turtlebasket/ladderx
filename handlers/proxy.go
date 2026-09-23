@@ -73,7 +73,11 @@ func normalizeBasePath(p string) string {
 }
 
 func init() {
-	allowedDomains = strings.Split(os.Getenv("ALLOWED_DOMAINS"), ",")
+	for _, domain := range strings.Split(os.Getenv("ALLOWED_DOMAINS"), ",") {
+		if domain = strings.TrimSpace(domain); domain != "" {
+			allowedDomains = append(allowedDomains, domain)
+		}
+	}
 	if os.Getenv("ALLOWED_DOMAINS_RULESET") == "true" {
 		allowedDomains = append(allowedDomains, rulesSet.Domains()...)
 	}
@@ -258,8 +262,8 @@ func fetchSite(urlpath string, queries map[string]string) (string, *http.Request
 		return "", nil, nil, err
 	}
 
-	if len(allowedDomains) > 0 && !StringInSlice(u.Host, allowedDomains) {
-		return "", nil, nil, fmt.Errorf("domain not allowed. %s not in %s", u.Host, allowedDomains)
+	if len(allowedDomains) > 0 && !domainAllowed(u.Hostname(), allowedDomains) {
+		return "", nil, nil, fmt.Errorf("domain not allowed. %s not in %s", u.Hostname(), allowedDomains)
 	}
 
 	if os.Getenv("LOG_URLS") == "true" {
@@ -493,4 +497,30 @@ func StringInSlice(s string, list []string) bool {
 		}
 	}
 	return false
+}
+
+func domainAllowed(host string, domains []string) bool {
+	host = normalizeDomain(host)
+	if host == "" {
+		return false
+	}
+
+	for _, domain := range domains {
+		domain = normalizeDomain(domain)
+		if domain == "" {
+			continue
+		}
+		if host == domain || strings.HasSuffix(host, "."+domain) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func normalizeDomain(domain string) string {
+	domain = strings.TrimSpace(strings.ToLower(domain))
+	domain = strings.Trim(domain, "[]")
+	domain = strings.TrimPrefix(domain, ".")
+	return strings.TrimSuffix(domain, ".")
 }

@@ -78,6 +78,37 @@ func TestRewriteHtml(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestDomainAllowed(t *testing.T) {
+	tests := []struct {
+		name    string
+		host    string
+		domains []string
+		want    bool
+	}{
+		{name: "exact domain", host: "example.com", domains: []string{"example.com"}, want: true},
+		{name: "subdomain", host: "www.example.com", domains: []string{"example.com"}, want: true},
+		{name: "case and trailing dot", host: "WWW.EXAMPLE.COM.", domains: []string{"example.com"}, want: true},
+		{name: "whitespace in allowlist", host: "example.com", domains: []string{" example.com "}, want: true},
+		{name: "hostname suffix attack", host: "notexample.com", domains: []string{"example.com"}, want: false},
+		{name: "hostname prefix attack", host: "example.com.attacker.test", domains: []string{"example.com"}, want: false},
+		{name: "empty entry", host: "example.com", domains: []string{""}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, domainAllowed(tt.host, tt.domains))
+		})
+	}
+}
+
+func TestFetchSiteRejectsDomainPrefixAttack(t *testing.T) {
+	resetHandlerTestGlobals(t)
+	allowedDomains = []string{"example.com"}
+
+	_, _, _, err := fetchSite("https://example.com.attacker.test/article", nil)
+	require.EqualError(t, err, "domain not allowed. example.com.attacker.test not in [example.com]")
+}
+
 func resetHandlerTestGlobals(t *testing.T) {
 	t.Helper()
 
@@ -87,7 +118,7 @@ func resetHandlerTestGlobals(t *testing.T) {
 	originalDefaultTimeout := defaultTimeout
 	originalBasePath := basePath
 
-	allowedDomains = []string{""}
+	allowedDomains = nil
 	rulesSet = nil
 	flareSolverrHost = ""
 	defaultTimeout = 5
