@@ -128,8 +128,12 @@ http://localhost:8080/ruleset
 | `ALLOWED_DOMAINS` | 允许访问的域名列表，使用逗号分隔；为空表示不限制 | `` |
 | `ALLOWED_DOMAINS_RULESET` | 是否允许使用规则集中的域名；false 表示不限制 | `false` |
 | `FLARESOLVERR_HOST` | 用于绕过 Cloudflare 的 FlareSolverr 服务地址（可选） | `http://localhost:8191` |
+| `BASE_PATH` | 代理的基础路径，用于将服务部署在子路径下（例如 http://localhost:8080/proxy/） | `` |
+| `SOCKS5_PROXY` | 用于站点出站请求的 SOCKS5 代理；认证信息可选 | `socks5://user:password@host:1080` |
 
 `ALLOWED_DOMAINS` 与 `ALLOWED_DOMAINS_RULESET` 会合并生效；如果两者都为空，则不施加任何限制。
+
+`SOCKS5_PROXY` 也支持省略协议的 `host:port` 格式。`socks5://` 和 `socks5h://` 都会通过代理解析目标主机名。
 
 ### 规则集
 

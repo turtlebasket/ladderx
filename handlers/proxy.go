@@ -53,13 +53,14 @@ type FlareSolverrResponse struct {
 }
 
 var (
-	UserAgent        = getenv("USER_AGENT", "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
-	ForwardedFor     = getenv("X_FORWARDED_FOR", "66.249.66.1")
-	flareSolverrHost = os.Getenv("FLARESOLVERR_HOST")
-	rulesSet         = ruleset.NewRulesetFromEnv()
-	allowedDomains   = []string{}
-	defaultTimeout   = 15 // in seconds
-	basePath         = normalizeBasePath(os.Getenv("BASE_PATH"))
+	UserAgent                           = getenv("USER_AGENT", "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
+	ForwardedFor                        = getenv("X_FORWARDED_FOR", "66.249.66.1")
+	flareSolverrHost                    = os.Getenv("FLARESOLVERR_HOST")
+	rulesSet                            = ruleset.NewRulesetFromEnv()
+	allowedDomains                      = []string{}
+	defaultTimeout                      = 15 // in seconds
+	basePath                            = normalizeBasePath(os.Getenv("BASE_PATH"))
+	targetTransport, targetTransportErr = newTargetTransport(os.Getenv("SOCKS5_PROXY"))
 )
 
 func normalizeBasePath(p string) string {
@@ -73,6 +74,12 @@ func normalizeBasePath(p string) string {
 }
 
 func init() {
+	if targetTransportErr != nil {
+		log.Printf("ERROR: %v", targetTransportErr)
+	} else if strings.TrimSpace(os.Getenv("SOCKS5_PROXY")) != "" {
+		log.Print("INFO: SOCKS5 proxy enabled for outbound site requests")
+	}
+
 	for _, domain := range strings.Split(os.Getenv("ALLOWED_DOMAINS"), ",") {
 		if domain = strings.TrimSpace(domain); domain != "" {
 			allowedDomains = append(allowedDomains, domain)
@@ -269,6 +276,9 @@ func fetchSite(urlpath string, queries map[string]string) (string, *http.Request
 	if os.Getenv("LOG_URLS") == "true" {
 		log.Println(u.String() + urlQuery)
 	}
+	if targetTransportErr != nil {
+		return "", nil, nil, targetTransportErr
+	}
 
 	// Modify the URI according to ruleset
 	rule := fetchRule(u.Host, u.Path)
@@ -279,7 +289,8 @@ func fetchSite(urlpath string, queries map[string]string) (string, *http.Request
 
 	// Fetch the site
 	client := &http.Client{
-		Timeout: time.Second * time.Duration(defaultTimeout),
+		Timeout:   time.Second * time.Duration(defaultTimeout),
+		Transport: targetTransport,
 	}
 	req, _ := http.NewRequest("GET", url, nil)
 

@@ -117,12 +117,16 @@ func resetHandlerTestGlobals(t *testing.T) {
 	originalFlareSolverrHost := flareSolverrHost
 	originalDefaultTimeout := defaultTimeout
 	originalBasePath := basePath
+	originalTargetTransport := targetTransport
+	originalTargetTransportErr := targetTransportErr
 
 	allowedDomains = nil
 	rulesSet = nil
 	flareSolverrHost = ""
 	defaultTimeout = 5
 	basePath = ""
+	targetTransport = http.DefaultTransport
+	targetTransportErr = nil
 
 	t.Cleanup(func() {
 		allowedDomains = originalAllowedDomains
@@ -130,5 +134,7 @@ func resetHandlerTestGlobals(t *testing.T) {
 		flareSolverrHost = originalFlareSolverrHost
 		defaultTimeout = originalDefaultTimeout
 		basePath = originalBasePath
+		targetTransport = originalTargetTransport
+		targetTransportErr = originalTargetTransportErr
 	})
 }

@@ -49,7 +49,7 @@
           pname = "ladder";
           inherit version src;
 
-          vendorHash = "sha256-GGmEOEk2BcjaaskzDEeKqGe91Wgd+x7No89A+HgMovo=";
+          vendorHash = "sha256-LVOuZiF4rFqtMD7I417cWa8G11IOyI1kPV+7ga1x+/E=";
           nativeBuildInputs = with pkgs; [
             minify
             tailwindcss

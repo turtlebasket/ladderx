@@ -17,6 +17,7 @@ services:
       #- X_FORWARDED_FOR=66.249.66.1
       #- USER_AGENT=Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
       #- USERPASS=foo:bar
+      #- SOCKS5_PROXY=socks5://user:password@proxy:1080
       - LOG_URLS=true
       #- GODEBUG=netdns=go
       - FLARESOLVERR_HOST=http://flaresolverr:8191

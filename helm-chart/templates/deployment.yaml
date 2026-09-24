@@ -51,5 +51,7 @@ spec:
             value: "{{ .Values.env.ALLOWED_DOMAINS }}"
           - name: ALLOWED_DOMAINS_RULESET
             value: "{{ .Values.env.ALLOWED_DOMAINS_RULESET }}"
+          - name: SOCKS5_PROXY
+            value: "{{ .Values.env.SOCKS5_PROXY }}"
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
