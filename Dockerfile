@@ -1,6 +1,6 @@
 ARG VERSION=build
 
-FROM ghcr.io/nixos/nix:2.35.2 AS build
+FROM ghcr.io/nixos/nix:2.35.4 AS build
 ARG VERSION
 WORKDIR /src
 
