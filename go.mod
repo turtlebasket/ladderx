@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/PuerkitoBio/goquery v1.13.0
 	github.com/akamensky/argparse v1.4.0
-	github.com/gofiber/fiber/v2 v2.52.15
+	github.com/gofiber/fiber/v2 v2.52.16
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/net v0.59.0
 	gopkg.in/yaml.v3 v3.0.1
